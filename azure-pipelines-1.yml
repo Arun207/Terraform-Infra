@@ -1,0 +1,88 @@
+name : Terraform_build
+
+parameters:
+  - name: commandOptions
+    default: '-var-file="dev.tfvars"'
+    
+trigger:
+ - none
+pool :
+ vmImage : windows-latest
+
+
+stages:
+- stage: Terraform_init_validate
+  jobs:
+    - job: Terraform_init_validate
+      steps:
+      - task: TerraformInstaller@0
+        inputs: 
+          terraformVersion: 'latest' 
+      - task: TerraformTaskV3@3
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          backendServiceArm: 'Dev-sub'
+          backendAzureRmResourceGroupName: 'test-tstate-rg'
+          backendAzureRmStorageAccountName: 'testcloudtfstate15439'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'test.devops.tfstate'
+      - task: TerraformTaskV3@3
+        inputs: 
+          provider: 'azurerm'
+          command: 'validate'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          environmentServiceNameAzureRM: 'Dev-sub'
+
+- stage: Terraform_plan 
+  jobs:
+    - job: Terraform_plan
+      steps:
+
+      - task: TerraformInstaller@0
+        inputs: 
+          terraformVersion: 'latest' 
+      - task: TerraformTaskV3@3
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          backendServiceArm: 'Dev-sub'
+          backendAzureRmResourceGroupName: 'test-tstate-rg'
+          backendAzureRmStorageAccountName: 'testcloudtfstate15439'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'test.devops.tfstate'           
+      - task: TerraformTaskV3@3
+        inputs:
+          provider: 'azurerm' 
+          command: 'plan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          commandOptions: ${{ parameters.commandOptions }}
+          environmentServiceNameAzureRM: 'Dev-sub'
+        
+        
+- stage: Terraform_apply
+  jobs:
+    - job: Terraform_apply
+      steps:
+      - task: TerraformInstaller@0
+        inputs: 
+          terraformVersion: 'latest' 
+      - task: TerraformTaskV3@3
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          backendServiceArm: 'Dev-sub'
+          backendAzureRmResourceGroupName: 'test-tstate-rg'
+          backendAzureRmStorageAccountName: 'testcloudtfstate15439'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'test.devops.tfstate'    
+      - task: TerraformTaskV3@3
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/code'
+          commandOptions: ${{ parameters.commandOptions }}
+          environmentServiceNameAzureRM: 'Dev-sub'
